@@ -274,20 +274,31 @@
 
     /* ── PATROCINADORES ────────────────────────────────────── */
     .sponsors-section { position:relative; z-index:1; padding:4rem 2rem; background:linear-gradient(180deg,transparent,rgba(0,20,40,0.5),transparent); }
+    .sponsors-controls {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 1.25rem; justify-content: center;
+    }
+    .sponsors-arrow {
+      background: rgba(0,212,180,0.1); border: 1px solid var(--teal);
+      color: var(--teal); font-size: 1.3rem;
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+      user-select: none;
+    }
+    .sponsors-arrow:hover { background: rgba(0,212,180,0.25); box-shadow: 0 0 16px rgba(0,212,180,0.35); transform: scale(1.1); }
+    .sponsors-pause {
+      background: rgba(0,212,180,0.1); border: 1px solid rgba(0,212,180,0.4);
+      color: var(--muted); font-size: 0.9rem;
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .sponsors-pause:hover { background: rgba(0,212,180,0.2); color: var(--teal); }
     .sponsors-track-wrapper {
       overflow: hidden;
-      -webkit-mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
-      mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
-    }
-    .sponsors-track {
-      display: flex; align-items: center; gap: 2.5rem;
-      animation: sponsorsScroll 35s linear infinite;
-      width: max-content;
-    }
-    .sponsors-track:hover { animation-play-state: paused; }
-    @keyframes sponsorsScroll {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
+      -webkit-mask-image: linear-gradient(90deg, transparent, black 5%, black 95%, transparent);
+      mask-image: linear-gradient(90deg, transparent, black 5%, black 95%, transparent);
     }
     .sponsor-item {
       flex-shrink: 0;
@@ -300,16 +311,11 @@
       transition: border-color 0.3s, box-shadow 0.3s;
       min-width: 140px;
     }
-    .sponsor-item:hover {
-      border-color: var(--teal);
-      box-shadow: 0 0 20px rgba(0,212,180,0.2);
-    }
+    .sponsor-item:hover { border-color: var(--teal); box-shadow: 0 0 20px rgba(0,212,180,0.2); }
     .sponsor-item img {
       max-height: 56px; max-width: 130px;
-      width: auto; height: auto;
-      object-fit: contain;
-      filter: grayscale(30%) brightness(1.1);
-      transition: filter 0.3s;
+      width: auto; height: auto; object-fit: contain;
+      filter: grayscale(30%) brightness(1.1); transition: filter 0.3s;
     }
     .sponsor-item:hover img { filter: grayscale(0%) brightness(1.2); }
     @media (max-width: 768px) {
@@ -935,6 +941,11 @@ function Carousel() {
 }
 
 function Patrocinadores() {
+  const [paused, setPaused] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const trackRef = useRef(null);
+  const speed = 28; // seconds - slightly faster than before
+
   const sponsors = [
     'patrocinadores/Albania.jpg',
     'patrocinadores/Anita Tours.jpeg',
@@ -966,10 +977,17 @@ function Patrocinadores() {
     'patrocinadores/Termales de la montaña.jpg',
     'patrocinadores/Tin Marin.png',
     'patrocinadores/Tour 503.png',
-    'patrocinadores/Tunco Lodge.jpg'
+    'patrocinadores/Tunco Lodge.jpg',
   ];
-  // Duplicate for seamless infinite scroll
   const all = [...sponsors, ...sponsors];
+
+  // Manual scroll: move by ~2 items worth
+  const scrollBy = (dir) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const itemW = 165; // approx item width + gap
+    setOffset(prev => prev + dir * itemW * 2);
+  };
 
   return (
     <section className="sponsors-section" id="patrocinadores">
@@ -979,10 +997,27 @@ function Patrocinadores() {
           <h2 className="section-title">Nuestros <span>Patrocinadores</span></h2>
           <div className="divider"/>
         </FadeIn>
+        {/* Controls */}
+        <div className="sponsors-controls">
+          <button className="sponsors-arrow" onClick={() => scrollBy(-1)} title="Anterior">&#8249;</button>
+          <button className="sponsors-pause" onClick={() => setPaused(p => !p)} title={paused ? 'Reanudar' : 'Pausar'}>
+            {paused ? '▶' : '⏸'}
+          </button>
+          <button className="sponsors-arrow" onClick={() => scrollBy(1)} title="Siguiente">&#8250;</button>
+        </div>
       </div>
       <FadeIn>
         <div className="sponsors-track-wrapper">
-          <div className="sponsors-track">
+          <div
+            ref={trackRef}
+            style={{
+              display:'flex', alignItems:'center', gap:'2.5rem',
+              width:'max-content',
+              animation: paused ? 'none' : `sponsorsScroll ${speed}s linear infinite`,
+              transform: paused ? `translateX(${-Math.abs(offset) % 100}%)` : undefined,
+              transition: paused ? 'transform 0.4s ease' : undefined,
+            }}
+          >
             {all.map((src, i) => (
               <div key={i} className="sponsor-item">
                 <img
@@ -996,10 +1031,15 @@ function Patrocinadores() {
           </div>
         </div>
       </FadeIn>
+      <style>{`
+        @keyframes sponsorsScroll {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </section>
   );
 }
-
 function Contacto() {
   return (
     <section id="contacto" className="contact-section">
